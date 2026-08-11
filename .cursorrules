@@ -1,5 +1,15 @@
 # Python FastAPI Best Practices — Clinic Service
 
+### Project Overview
+Product Context: I am building an AI-powered tele-dermatology and medicine fulfillment backend.
+
+Workflow:
+**User Submission:** Patient submits a questionnaire with skin/hair photos and videos.
+**AI Diagnosis:** Backend runs inputs asynchronously through a local Vision-LLM (Ollama) to generate a diagnosis.
+**Paywall:** User sees a blurred preview, pays a consultation fee to unlock full findings, and triggers a doctor review.
+**Doctor Review:** Doctor gets notified (Push/SMS/WhatsApp) to Accept (customizes medicine kit), Reject (triggers auto-refund), or Request Info (user resubmits).
+**Fulfillment:** Approved user pays for the kit => triggers third-party logistics API for delivery.
+
 ## Service Responsibility
 This repository hosts the **Clinic Service**, which acts as the core clinical engine for the Skin & Hair Diagnosis app.
 It owns and manages:

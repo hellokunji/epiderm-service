@@ -23,7 +23,6 @@ async def verify_s2s_api_key(api_key: Optional[str] = Depends(api_key_header)) -
         )
     return api_key
 
-
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ) -> CurrentUser:
@@ -38,3 +37,4 @@ async def get_current_user(
 
     # TODO: validate JWT using settings.JWT_SECRET_KEY
     return CurrentUser(user_id="stub")
+

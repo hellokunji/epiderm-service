@@ -11,7 +11,7 @@ s2s_router = APIRouter()
 
 def _run_llm(body: LLMPromptRequest) -> SymptomAnalysis:
     return call_ollama_structured(
-        prompt=body.prompt,
+        user_content=body.prompt,
         system_prompt=body.system_prompt,
         response_model=SymptomAnalysis,
     )

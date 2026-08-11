@@ -61,6 +61,7 @@ logs/
 # Database
 *.db
 *.sqlite3
+dump.rdb
 
 # IDE & editors
 .vscode/

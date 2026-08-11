@@ -1,7 +1,12 @@
-from pydantic_settings import BaseSettings
+from typing import Optional
+
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
     PROJECT_NAME: str = "Epiderm Clinic Service"
     PROJECT_DESCRIPTION: str = (
         "Clinic microservice for AI diagnosis of hair and skin problems."
@@ -17,8 +22,19 @@ class Settings(BaseSettings):
     OLLAMA_VISION_MODEL: str = "gemma3:12b"
     OLLAMA_HOST: str = "http://localhost:11434"
 
-    class Config:
-        env_file = ".env"
+    REDIS_URL: str = "redis://localhost:6379/0"
+    CELERY_BROKER_URL: Optional[str] = None
+    CELERY_RESULT_BACKEND: Optional[str] = None
+    CELERY_RESULT_EXPIRES: int = 86_400
+    CELERY_DIAGNOSIS_WORKER_CONCURRENCY: int = 1
+
+    @model_validator(mode="after")
+    def set_celery_defaults(self) -> "Settings":
+        if self.CELERY_BROKER_URL is None:
+            self.CELERY_BROKER_URL = self.REDIS_URL
+        if self.CELERY_RESULT_BACKEND is None:
+            self.CELERY_RESULT_BACKEND = self.REDIS_URL
+        return self
 
 
 settings = Settings()

@@ -1,13 +1,19 @@
 import json
+from functools import lru_cache
 from typing import List, Optional, TypeVar
 
-from ollama import chat
+from ollama import Client
 from pydantic import BaseModel
 
 from app.core.config import settings
 from app.schemas.diagnosis import QuestionnairePayload
 
 T = TypeVar("T", bound=BaseModel)
+
+
+@lru_cache
+def get_ollama_client() -> Client:
+    return Client(host=settings.OLLAMA_HOST)
 
 
 def format_questionnaire_prompt(questionnaire: QuestionnairePayload) -> str:
@@ -33,9 +39,9 @@ def call_ollama_structured(
         "content": user_content,
     }
     if images:
-        user_message["images"] = images  # base64, file path, or bytes
+        user_message["images"] = images
 
-    response = chat(
+    response = get_ollama_client().chat(
         model=model or settings.OLLAMA_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
