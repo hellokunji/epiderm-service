@@ -1,0 +1,12 @@
+{
+  "images": ["<base64-scalp-photo>"],
+  "questionnaire": {
+    "answers": [
+      {
+        "question_id": "body_area",
+        "question": "Which area is affected?",
+        "answer": "scalp"
+      }
+    ]
+  }
+}

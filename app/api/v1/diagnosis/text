@@ -1,0 +1,17 @@
+{
+  "questionnaire": {
+    "questionnaire_id": "skin-hair-v1",
+    "answers": [
+      {
+        "question_id": "q1",
+        "question": "How long have you had scalp itching?",
+        "answer": "2 weeks"
+      },
+      {
+        "question_id": "q2",
+        "question": "Select all symptoms",
+        "answer": ["itching", "redness", "flaking"]
+      }
+    ]
+  }
+}

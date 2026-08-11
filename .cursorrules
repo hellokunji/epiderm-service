@@ -1,0 +1,12 @@
+# Python FastAPI Best Practices — Clinic Service
+
+## Service Responsibility
+This repository hosts the **Clinic Service**, which acts as the core clinical engine for the Skin & Hair Diagnosis app.
+It owns and manages:
+- **Questionnaires:** Template definitions, dynamic questions, image/video attachment metadata.
+- **Questionnaire Submissions:** Patient response ingestion and payload preparation.
+- **Diagnoses:** Asynchronous trigger to self-hosted LLM, partial/full diagnosis visibility rules, state tracking.
+- **Consultations:** Routing cases to doctors, managing doctor actions (Accept, Reject, Request Info).
+- **Prescriptions & Medicine Kits:** Doctor modification of treatment plans, custom kit assembly, and kit finalization.
+
+---
