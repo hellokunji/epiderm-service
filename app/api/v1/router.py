@@ -21,6 +21,7 @@ s2s_router = APIRouter(dependencies=[Depends(verify_s2s_api_key)])
 s2s_router.include_router(questionnaire.s2s_router, prefix="/questionnaire")
 s2s_router.include_router(llm.s2s_router, prefix="/llm")
 s2s_router.include_router(diagnosis.s2s_router, prefix="/diagnosis")
+s2s_router.include_router(consult.s2s_router, prefix="/consult")
 
 router = APIRouter()
 router.include_router(api_router, prefix="", tags=["Client"])

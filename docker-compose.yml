@@ -1,4 +1,51 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clinic
+      POSTGRES_USER: epiderm
+      POSTGRES_PASSWORD: epiderm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U epiderm -d clinic"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: epiderm
+      MONGO_INITDB_ROOT_PASSWORD: epiderm
+      MONGO_INITDB_DATABASE: clinic
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "-u",
+          "epiderm",
+          "-p",
+          "epiderm",
+          "--authenticationDatabase",
+          "admin",
+          "--quiet",
+          "--eval",
+          "db.adminCommand('ping')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -18,12 +65,19 @@ services:
       - path: .env
         required: false
     environment:
+      DATABASE_URL: postgresql+psycopg2://epiderm:epiderm@postgres:5432/clinic
+      MONGODB_URL: mongodb://epiderm:epiderm@mongo:27017/?authSource=admin
+      MONGODB_DB_NAME: clinic
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -40,6 +94,9 @@ services:
       - path: .env
         required: false
     environment:
+      DATABASE_URL: postgresql+psycopg2://epiderm:epiderm@postgres:5432/clinic
+      MONGODB_URL: mongodb://epiderm:epiderm@mongo:27017/?authSource=admin
+      MONGODB_DB_NAME: clinic
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
@@ -49,11 +106,14 @@ services:
       - app.core.celery_app
       - worker
       - -Q
-      - default
+      - questionnaire_submitted
       - -n
       - consumer@%h
+      - --pool=solo
       - --loglevel=info
     depends_on:
+      mongo:
+        condition: service_healthy
       redis:
         condition: service_healthy
 
@@ -75,11 +135,12 @@ services:
       - app.core.celery_app
       - worker
       - -Q
-      - diagnosis
+      - diagnosis_ready
       - -n
       - worker@%h
-      - --loglevel=info
+      - --pool=solo
       - --concurrency=${CELERY_DIAGNOSIS_WORKER_CONCURRENCY:-1}
+      - --loglevel=info
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -87,4 +148,6 @@ services:
         condition: service_healthy
 
 volumes:
+  postgres_data:
+  mongo_data:
   redis_data:

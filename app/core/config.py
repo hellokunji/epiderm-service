@@ -12,7 +12,9 @@ class Settings(BaseSettings):
         "Clinic microservice for AI diagnosis of hair and skin problems."
     )
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: str = "sqlite:///./test.db"
+    DATABASE_URL: str = "postgresql+psycopg2://epiderm:epiderm@localhost:5432/clinic"
+    MONGODB_URL: str = "mongodb://epiderm:epiderm@localhost:27017/?authSource=epiderm"
+    MONGODB_DB_NAME: str = "epiderm"
 
     S2S_API_KEY: str = "V8a3W7p9KsL4zR5bQ2xN1mC8TuSjXyP0"
     JWT_SECRET_KEY: str = ""

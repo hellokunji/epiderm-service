@@ -29,3 +29,14 @@ class DiagnosisJobStatus(BaseModel):
         default=None,
         description="Celery task metadata while the job is running",
     )
+
+
+class DiagnosisResultRead(BaseModel):
+    consult_id: str
+    job_id: str
+    mode: str
+    status: str
+    result: Optional[dict[str, Any]] = None
+    error: Optional[str] = None
+    response_id: Optional[str] = None
+    patient_id: Optional[str] = None

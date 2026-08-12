@@ -19,4 +19,19 @@ It owns and manages:
 - **Consultations:** Routing cases to doctors, managing doctor actions (Accept, Reject, Request Info).
 - **Prescriptions & Medicine Kits:** Doctor modification of treatment plans, custom kit assembly, and kit finalization.
 
----
+### Consult Statuses
+- `CREATED` — consult created
+- `QUESTIONNAIRE_SUBMITTED` — questionnaire response saved
+- `DRAI_DG_PENDING` — queued for AI diagnosis
+- `DRAI_DG_PROCESSING` — AI diagnosis running
+- `DRAI_DG_DIAGNOSED` — AI diagnosis complete
+- `DRAI_DG_PAYMENT_PENDING` — waiting for diagnosis unlock payment
+- `DRAI_DG_PAYMENT_SUCCESS` — diagnosis payment succeeded
+- `DRAI_DG_PAYMENT_FAILED` — diagnosis payment failed
+- `DR_DG_PENDING` — awaiting doctor diagnosis review
+- `DR_DG_APPROVED` — doctor approved diagnosis
+- `DR_DG_REJECTED` — doctor rejected diagnosis
+- `DRAI_KIT_PROCESSING` — AI kit assembly in progress
+- `DRAI_KIT_PROCESSED` — AI kit ready
+- `DR_KIT_PENDING` — awaiting doctor kit confirmation
+- `DR_KIT_CREATED` — doctor confirmed/created kit

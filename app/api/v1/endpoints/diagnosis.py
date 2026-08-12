@@ -7,7 +7,7 @@ from app.schemas.diagnosis import (
     DiagnosisVisionRequest,
     VisualSymptomAnalysis,
 )
-from app.schemas.jobs import DiagnosisJobCreated, DiagnosisJobStatus
+from app.schemas.jobs import DiagnosisJobCreated, DiagnosisJobStatus, DiagnosisResultRead
 from app.schemas.llm import SymptomAnalysis
 from app.schemas.response import ok
 from app.services.diagnosis_job import (
@@ -15,8 +15,10 @@ from app.services.diagnosis_job import (
     enqueue_text_diagnosis,
     enqueue_vision_diagnosis,
     get_diagnosis_job,
+    get_job_id_for_consult,
     job_exists,
 )
+from app.services.diagnosis_result import get_diagnosis_result_by_consult
 from app.services.llm import call_ollama_structured, diagnose_from_questionnaire
 
 api_router = APIRouter()
@@ -86,6 +88,31 @@ def get_diagnosis_job_status(job_id: str):
     return get_diagnosis_job(job_id)
 
 
+@api_router.get("/consult/{consult_id}", response_model=DiagnosisResultRead)
+def get_diagnosis_by_consult(consult_id: str):
+    """Read persisted AI diagnosis for a consult (written by the diagnosis worker)."""
+    document = get_diagnosis_result_by_consult(consult_id)
+    if document is not None:
+        return DiagnosisResultRead.model_validate(document)
+
+    job_id = get_job_id_for_consult(consult_id)
+    if job_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Diagnosis not found for consult",
+        )
+
+    job = get_diagnosis_job(job_id)
+    return DiagnosisResultRead(
+        consult_id=consult_id,
+        job_id=job_id,
+        mode="pending",
+        status=job.status.value,
+        result=job.result,
+        error=job.error,
+    )
+
+
 @s2s_router.post("/text", response_model=SymptomAnalysis)
 def diagnose_text_s2s(body: DiagnosisTextRequest):
     return diagnose_from_questionnaire(
@@ -139,3 +166,29 @@ def get_diagnosis_job_status_s2s(job_id: str):
             detail="Diagnosis job not found",
         )
     return ok(get_diagnosis_job(job_id))
+
+
+@s2s_router.get("/consult/{consult_id}")
+def get_diagnosis_by_consult_s2s(consult_id: str):
+    document = get_diagnosis_result_by_consult(consult_id)
+    if document is not None:
+        return ok(DiagnosisResultRead.model_validate(document))
+
+    job_id = get_job_id_for_consult(consult_id)
+    if job_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Diagnosis not found for consult",
+        )
+
+    job = get_diagnosis_job(job_id)
+    return ok(
+        DiagnosisResultRead(
+            consult_id=consult_id,
+            job_id=job_id,
+            mode="pending",
+            status=job.status.value,
+            result=job.result,
+            error=job.error,
+        )
+    )
