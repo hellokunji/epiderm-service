@@ -13,11 +13,11 @@ class Settings(BaseSettings):
     )
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str = "postgresql+psycopg2://epiderm:epiderm@localhost:5432/clinic"
-    MONGODB_URL: str = "mongodb://epiderm:epiderm@localhost:27017/?authSource=epiderm"
+    MONGODB_URL: str = "mongodb://epiderm:epiderm@localhost:27017/?authSource=admin"
     MONGODB_DB_NAME: str = "epiderm"
 
     S2S_API_KEY: str = "V8a3W7p9KsL4zR5bQ2xN1mC8TuSjXyP0"
-    JWT_SECRET_KEY: str = ""
+    JWT_SECRET_KEY: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
 
     OLLAMA_MODEL: str = "llama3.2"

@@ -18,6 +18,7 @@ def _cache_key(category_value: str) -> str:
 def get_cached_active_questionnaire(
     category: ConsultCategory,
 ) -> Optional[QuestionnaireVersionRead]:
+    return None # TODO: Remove this
     raw = get_redis_client().get(_cache_key(category.value))
     if raw is None:
         return None

@@ -1,12 +1,14 @@
 from typing import Optional
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
+from jwt.exceptions import InvalidTokenError
 
 from app.core.config import settings
 
 bearer_scheme = HTTPBearer(auto_error=False)
-api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 class CurrentUser:
@@ -16,6 +18,7 @@ class CurrentUser:
 
 
 async def verify_s2s_api_key(api_key: Optional[str] = Depends(api_key_header)) -> str:
+    """Common S2S auth dependency — require matching X-API-Key header."""
     if not api_key or not settings.S2S_API_KEY or api_key != settings.S2S_API_KEY:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -23,18 +26,46 @@ async def verify_s2s_api_key(api_key: Optional[str] = Depends(api_key_header)) -
         )
     return api_key
 
+
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
 ) -> CurrentUser:
-    # TODO: validate JWT using settings.JWT_SECRET_KEY
-    return CurrentUser(user_id="stub")
-    if credentials is None:
+    """Common client auth dependency — validate Bearer JWT and return CurrentUser."""
+    if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if not settings.JWT_SECRET_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="JWT authentication is not configured",
+        )
 
-    # TODO: validate JWT using settings.JWT_SECRET_KEY
-    return CurrentUser(user_id="stub")
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+    except InvalidTokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
 
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload: missing subject",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    email = payload.get("email")
+    return CurrentUser(
+        user_id=str(user_id),
+        email=str(email) if email is not None else None,
+    )

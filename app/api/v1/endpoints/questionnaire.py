@@ -1,9 +1,10 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pymongo.database import Database
 from sqlalchemy.orm import Session
 
+from app.api.deps.auth import CurrentUser, get_current_user
 from app.api.deps.database import get_db, get_mongo_db
 from app.core.flow_log import flow_log
 from app.models.consult import ConsultCategory, ConsultStatus
@@ -67,21 +68,24 @@ def submit_questionnaire(
     body: QuestionnaireSubmitRequest,
     db: Session = Depends(get_db),
     mongo_db: Database = Depends(get_mongo_db),
-    x_user_id: str = Header(..., alias="X-User-Id"),
+    current_user: CurrentUser = Depends(get_current_user),
 ):
+    patient_id = current_user.user_id
     flow_log(
         "01",
         "api",
         "Submit questionnaire request received",
-        patient_id=x_user_id,
+        patient_id=patient_id,
         category=body.category.value,
         has_questionnaire=body.questionnaire is not None,
+        body=body,
         image_count=len(body.images or []),
     )
 
+    # TODO: COMPENSATORY TRANSACTION TO BE IMPLEMENTED
     consult = create_consult(
         db,
-        patient_id=x_user_id,
+        patient_id=patient_id,
         category=body.category,
     )
     flow_log(
@@ -89,14 +93,14 @@ def submit_questionnaire(
         "postgres",
         "Consult created",
         consult_id=consult.id,
-        patient_id=x_user_id,
+        patient_id=patient_id,
         status=consult.status.value,
     )
 
     response_doc = create_questionnaire_response(
         mongo_db,
         consult_id=consult.id,
-        patient_id=x_user_id,
+        patient_id=patient_id,
         category=body.category,
         questionnaire=body.questionnaire,
         images=body.images,
@@ -120,7 +124,7 @@ def submit_questionnaire(
     task_id = enqueue_questionnaire_submission(
         consult_id=consult.id,
         response_id=response_id,
-        patient_id=x_user_id,
+        patient_id=patient_id,
         category=body.category.value,
     )
     consult = update_consult_status(
