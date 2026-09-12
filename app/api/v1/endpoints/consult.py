@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pymongo.database import Database
 from sqlalchemy.orm import Session
 
@@ -50,20 +50,38 @@ def list_s2s_consults_by_patient(patient_id: str, db: Session = Depends(get_db))
     return ok(_list_by_patient_id(db, patient_id))
 
 
-@api_router.get("/")
+@api_router.get("/all", response_model=ConsultListResult)
 def list_client_consults(db: Session = Depends(get_db)):
     consults = db.query(Consult).order_by(Consult.id).all()
     return ConsultListResult(items=[ConsultRead.model_validate(c) for c in consults])
 
 
-@s2s_router.get("/")
+@s2s_router.get("/all")
 def list_s2s_consults(db: Session = Depends(get_db)):
     consults = db.query(Consult).order_by(Consult.id).all()
     return ok(ConsultListResult(items=[ConsultRead.model_validate(c) for c in consults]))
 
 
-@api_router.get("/{consult_id}", response_model=ConsultDetailRead)
+@api_router.get("/", response_model=ConsultDetailRead)
 def get_consult(
+    consult_id: str = Query(..., description="Consult id"),
+    db: Session = Depends(get_db),
+    mongo_db: Database = Depends(get_mongo_db),
+):
+    return _get_consult_detail(db, mongo_db, consult_id)
+
+
+@s2s_router.get("/")
+def get_s2s_consult(
+    consult_id: str = Query(..., description="Consult id"),
+    db: Session = Depends(get_db),
+    mongo_db: Database = Depends(get_mongo_db),
+):
+    return ok(_get_consult_detail(db, mongo_db, consult_id))
+
+
+@api_router.get("/{consult_id}", response_model=ConsultDetailRead)
+def get_consult_by_path(
     consult_id: str,
     db: Session = Depends(get_db),
     mongo_db: Database = Depends(get_mongo_db),
@@ -72,7 +90,7 @@ def get_consult(
 
 
 @s2s_router.get("/{consult_id}")
-def get_s2s_consult(
+def get_s2s_consult_by_path(
     consult_id: str,
     db: Session = Depends(get_db),
     mongo_db: Database = Depends(get_mongo_db),

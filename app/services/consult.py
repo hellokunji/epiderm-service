@@ -1,7 +1,6 @@
 from typing import Optional
 from uuid import uuid4
 
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
@@ -17,13 +16,6 @@ def create_consult(
     doctor_id: Optional[str] = None,
     consult_status: ConsultStatus = ConsultStatus.CREATED,
 ) -> Consult:
-    existing = db.query(Consult).filter(Consult.patient_id == patient_id).first()
-    if existing is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Patient already has an existing consult",
-        )
-
     consult = Consult(
         id=str(uuid4()),
         patient_id=patient_id,
