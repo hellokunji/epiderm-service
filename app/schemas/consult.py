@@ -1,9 +1,8 @@
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict
 
 from app.models.consult import ConsultCategory, ConsultStatus
-from app.schemas.jobs import DiagnosisResultRead
 
 
 class ConsultRead(BaseModel):
@@ -17,7 +16,7 @@ class ConsultRead(BaseModel):
 
 
 class ConsultDetailRead(ConsultRead):
-    diagnosis: Optional[DiagnosisResultRead] = None
+    diagnosis: Optional[dict[str, Any]] = None
 
 
 class ConsultListResult(BaseModel):

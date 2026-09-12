@@ -2,6 +2,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from pymongo.database import Database
+
 from app.core.flow_log import flow_log
 from app.core.mongodb import connect_to_mongo, get_mongo_db
 
@@ -64,9 +66,13 @@ def save_diagnosis_result(
     return document
 
 
-def get_diagnosis_result_by_consult(consult_id: str) -> Optional[dict[str, Any]]:
-    connect_to_mongo()
-    mongo_db = get_mongo_db()
+def get_diagnosis_result_by_consult(
+    consult_id: str,
+    mongo_db: Optional[Database] = None,
+) -> Optional[dict[str, Any]]:
+    if mongo_db is None:
+        connect_to_mongo()
+        mongo_db = get_mongo_db()
     document = mongo_db[COLLECTION_NAME].find_one(
         {"consult_id": consult_id},
         {"_id": 0},
