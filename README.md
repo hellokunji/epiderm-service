@@ -81,7 +81,7 @@ Base path: `/api/v1`. Client calls use `Authorization: Bearer <jwt>`. Internal c
 1. **Active questionnaire** — `GET /api/v1/questionnaire/?category=SKIN` (or `HAIR`).
 2. **Submit** — `POST /api/v1/questionnaire/` with `category`, optional `questionnaire`, optional base64 `images`. Returns `202` with `consult_id`, `status` (`DRAI_DG_PENDING`), and `task_id`.
 3. **Poll diagnosis** — `GET /api/v1/diagnosis/consult/{consult_id}` or `GET /api/v1/diagnosis/jobs/{job_id}`.
-4. **Consults** — `GET /api/v1/consult/` or `GET /api/v1/consult/patient/{patient_id}`.
+4. **Consults** — `GET /api/v1/consult/{consult_id}` (Postgres consult + Mongo `diagnosis_result`, `diagnosis` is `null` until the worker writes it), `GET /api/v1/consult/`, or `GET /api/v1/consult/patient/{patient_id}`.
 
 Direct (non-submit) diagnosis:
 
