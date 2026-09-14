@@ -6,6 +6,7 @@ from ollama import Client
 from pydantic import BaseModel
 
 from app.core.config import settings
+from app.core.flow_log import flow_log
 from app.schemas.diagnosis import QuestionnairePayload
 
 T = TypeVar("T", bound=BaseModel)
@@ -60,9 +61,29 @@ def diagnose_from_questionnaire(
     system_prompt: str,
     response_model: type[T],
     images: Optional[List[str]] = None,
+    retrieved_context: Optional[str] = None,
+    consult_id: Optional[str] = None,
 ) -> T:
     model = settings.OLLAMA_VISION_MODEL if images else settings.OLLAMA_MODEL
     content = format_questionnaire_prompt(questionnaire)
+
+    if retrieved_context:
+        flow_log(
+            "11r5",
+            "rag",
+            "Injecting retrieved guidelines into LLM user prompt",
+            consult_id=consult_id,
+            context_chars=len(retrieved_context),
+            prompt_chars=len(content) + len(retrieved_context) + 2,
+        )
+        content = f"{retrieved_context}\n\n{content}"
+    else:
+        flow_log(
+            "11r5",
+            "rag",
+            "Calling LLM without retrieved guidelines",
+            consult_id=consult_id,
+        )
 
     if images:
         content += (

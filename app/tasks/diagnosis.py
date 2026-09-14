@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from ollama import RequestError, ResponseError
 
@@ -16,6 +17,7 @@ from app.services.diagnosis_result import save_diagnosis_result
 from app.services.llm import call_ollama_structured, diagnose_from_questionnaire
 from app.models.consult import ConsultStatus
 from app.services.consult import update_consult_status
+from app.services.rag import try_retrieve_for_diagnosis
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ def _persist_success(
     job_id: str,
     mode: str,
     result: dict,
+    rag_context: Optional[list] = None,
 ) -> None:
     consult_id = payload.get("consult_id")
     if not consult_id:
@@ -38,6 +41,7 @@ def _persist_success(
         mode=mode,
         status="success",
         result=result,
+        rag_context=rag_context,
     )
     flow_log(
         "14c",
@@ -86,6 +90,11 @@ def run_text_diagnosis(self, payload: dict) -> dict:
         retry=self.request.retries,
     )
     body = DiagnosisTextRequest.model_validate(payload)
+    retrieved_context, rag_context = try_retrieve_for_diagnosis(
+        body.questionnaire,
+        payload.get("category"),
+        consult_id=consult_id,
+    )
     try:
         flow_log(
             "12",
@@ -99,6 +108,8 @@ def run_text_diagnosis(self, payload: dict) -> dict:
             body.questionnaire,
             system_prompt=body.system_prompt,
             response_model=SymptomAnalysis,
+            retrieved_context=retrieved_context,
+            consult_id=consult_id,
         )
         result_dict = result.model_dump()
         flow_log(
@@ -114,6 +125,7 @@ def run_text_diagnosis(self, payload: dict) -> dict:
             job_id=self.request.id,
             mode="text",
             result=result_dict,
+            rag_context=rag_context,
         )
         flow_log(
             "15",
@@ -175,6 +187,13 @@ def run_vision_diagnosis(self, payload: dict) -> dict:
             model=settings.OLLAMA_VISION_MODEL,
             image_count=len(body.images),
             task_id=self.request.id,
+        )
+        flow_log(
+            "11r1",
+            "rag",
+            "Skipping RAG — vision-only diagnosis has no questionnaire text",
+            consult_id=consult_id,
+            mode="vision",
         )
         result = call_ollama_structured(
             user_content=(
@@ -250,6 +269,11 @@ def run_multimodal_diagnosis(self, payload: dict) -> dict:
         retry=self.request.retries,
     )
     body = DiagnosisMultimodalRequest.model_validate(payload)
+    retrieved_context, rag_context = try_retrieve_for_diagnosis(
+        body.questionnaire,
+        payload.get("category"),
+        consult_id=consult_id,
+    )
     try:
         flow_log(
             "12",
@@ -265,6 +289,8 @@ def run_multimodal_diagnosis(self, payload: dict) -> dict:
             images=body.images,
             system_prompt=body.system_prompt,
             response_model=VisualSymptomAnalysis,
+            retrieved_context=retrieved_context,
+            consult_id=consult_id,
         )
         result_dict = result.model_dump()
         flow_log(
@@ -280,6 +306,7 @@ def run_multimodal_diagnosis(self, payload: dict) -> dict:
             job_id=self.request.id,
             mode="multimodal",
             result=result_dict,
+            rag_context=rag_context,
         )
         flow_log(
             "15",

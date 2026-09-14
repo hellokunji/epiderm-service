@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_DB: clinic
@@ -59,7 +59,9 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      target: api
     restart: unless-stopped
     env_file:
       - path: .env
@@ -88,7 +90,9 @@ services:
       start_period: 15s
 
   consumer:
-    build: .
+    build:
+      context: .
+      target: api
     restart: unless-stopped
     env_file:
       - path: .env
@@ -118,17 +122,23 @@ services:
         condition: service_healthy
 
   worker:
-    build: .
+    build:
+      context: .
+      target: diagnosis-worker
     restart: unless-stopped
     env_file:
       - path: .env
         required: false
     environment:
+      DATABASE_URL: postgresql+psycopg2://epiderm:epiderm@postgres:5432/clinic
+      MONGODB_URL: mongodb://epiderm:epiderm@mongo:27017/?authSource=admin
+      MONGODB_DB_NAME: clinic
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       CELERY_DIAGNOSIS_WORKER_CONCURRENCY: ${CELERY_DIAGNOSIS_WORKER_CONCURRENCY:-1}
       OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
+      RAG_ENABLED: ${RAG_ENABLED:-true}
     command:
       - celery
       - -A
@@ -144,6 +154,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
       redis:
         condition: service_healthy
 

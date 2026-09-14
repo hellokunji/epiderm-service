@@ -22,6 +22,7 @@ def save_diagnosis_result(
     error: Optional[str] = None,
     response_id: Optional[str] = None,
     patient_id: Optional[str] = None,
+    rag_context: Optional[list[dict[str, Any]]] = None,
 ) -> dict[str, Any]:
     """Persist AI diagnosis output so the FastAPI app can serve it by consult_id."""
     connect_to_mongo()
@@ -36,6 +37,7 @@ def save_diagnosis_result(
         "status": status,
         "result": result,
         "error": error,
+        "rag_context": rag_context or [],
         "updated_at": now,
     }
     flow_log(

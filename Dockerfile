@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -14,6 +14,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
+
+FROM base AS diagnosis-worker
+
+COPY requirements-diagnosis-worker.txt .
+RUN pip install --no-cache-dir -r requirements-diagnosis-worker.txt
+
+FROM base AS api
 
 EXPOSE 8000
 

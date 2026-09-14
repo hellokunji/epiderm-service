@@ -45,6 +45,9 @@ def _init_worker_process(**_kwargs) -> None:
 
     engine.dispose(close=False)
     connect_to_mongo()
+    from app.services.rag import warmup_embedder
+
+    warmup_embedder()
 
 
 @worker_process_shutdown.connect

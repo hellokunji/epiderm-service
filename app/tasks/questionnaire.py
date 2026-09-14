@@ -91,6 +91,7 @@ def process_questionnaire_submission(self, payload: dict) -> dict:
         patient_id=patient_id,
         questionnaire=document.get("questionnaire"),
         images=document.get("images"),
+        category=category,
     )
 
     diagnosis_job_id = diagnosis_job.job_id if diagnosis_job else None

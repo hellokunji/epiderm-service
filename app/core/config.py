@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     CELERY_RESULT_EXPIRES: int = 86_400
     CELERY_DIAGNOSIS_WORKER_CONCURRENCY: int = 1
 
+    RAG_ENABLED: bool = True
+    RAG_TOP_K: int = 3
+    RAG_EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
+
     @model_validator(mode="after")
     def set_celery_defaults(self) -> "Settings":
         if self.CELERY_BROKER_URL is None:

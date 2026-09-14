@@ -40,3 +40,4 @@ class DiagnosisResultRead(BaseModel):
     error: Optional[str] = None
     response_id: Optional[str] = None
     patient_id: Optional[str] = None
+    rag_context: Optional[list[dict[str, Any]]] = None

@@ -123,6 +123,7 @@ def enqueue_diagnosis_for_response(
     patient_id: str,
     questionnaire: Optional[dict[str, Any]],
     images: Optional[list[str]],
+    category: Optional[str] = None,
 ) -> Optional[DiagnosisJobCreated]:
     """Route a stored questionnaire response to the correct AI diagnosis worker task."""
     cleaned_images = [
@@ -133,6 +134,7 @@ def enqueue_diagnosis_for_response(
         "consult_id": consult_id,
         "response_id": response_id,
         "patient_id": patient_id,
+        "category": category,
     }
 
     if questionnaire is not None and cleaned_images is not None:
