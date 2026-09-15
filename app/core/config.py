@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     MONGODB_DB_NAME: str = "epiderm"
 
     S2S_API_KEY: str = "V8a3W7p9KsL4zR5bQ2xN1mC8TuSjXyP0"
-    JWT_SECRET_KEY: str = "change-me"
+    JWT_SECRET_KEY: str = "change-me-to-a-long-random-secret"
     JWT_ALGORITHM: str = "HS256"
 
     OLLAMA_MODEL: str = "llama3.2"
