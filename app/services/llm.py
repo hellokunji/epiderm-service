@@ -91,7 +91,8 @@ def call_ollama_structured(
         model=model,
         user_content=user_content,
         system_prompt=system_prompt,
-        images=images,
+        # images=images,
+        response_model=response_model,
         temperature=temperature,
     )
     response = get_ollama_client().chat(
@@ -113,7 +114,7 @@ def call_ollama_structured(
         system_prompt=system_prompt,
         images=images,
         temperature=temperature,
-        response_time=response.response_time,
+        total_duration_ns=response.total_duration,
         response_content=response.message.content,
     )
 
