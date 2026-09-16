@@ -1,15 +1,56 @@
 import json
 from functools import lru_cache
-from typing import List, Optional, TypeVar
+from typing import List, Optional, TypeVar, Union
+from urllib.parse import urlparse
 
+import httpx
 from ollama import Client
 from pydantic import BaseModel
 
 from app.core.config import settings
 from app.core.flow_log import flow_log
 from app.schemas.diagnosis import QuestionnairePayload
+from app.services.s3 import download_s3_object, parse_s3_location
 
 T = TypeVar("T", bound=BaseModel)
+ImageInput = Union[str, bytes]
+
+
+def _is_http_url(value: str) -> bool:
+    parsed = urlparse(value)
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _is_remote_image(value: str) -> bool:
+    return value.startswith("s3://") or _is_http_url(value)
+
+
+def resolve_images_for_ollama(images: Optional[List[str]]) -> Optional[List[ImageInput]]:
+    """Ollama only accepts local paths, bytes, or base64 — not remote URLs."""
+    if not images:
+        return images
+
+    resolved: List[ImageInput] = list(images)
+    url_indexes = [index for index, image in enumerate(images) if _is_remote_image(image)]
+    if not url_indexes:
+        return resolved
+
+    http_client: Optional[httpx.Client] = None
+    try:
+        for index in url_indexes:
+            location = parse_s3_location(images[index])
+            if location:
+                resolved[index] = download_s3_object(*location)
+                continue
+            if http_client is None:
+                http_client = httpx.Client(timeout=30.0, follow_redirects=True)
+            response = http_client.get(images[index])
+            response.raise_for_status()
+            resolved[index] = response.content
+    finally:
+        if http_client is not None:
+            http_client.close()
+    return resolved
 
 
 @lru_cache
@@ -39,9 +80,20 @@ def call_ollama_structured(
         "role": "user",
         "content": user_content,
     }
-    if images:
-        user_message["images"] = images
+    ollama_images = resolve_images_for_ollama(images)
+    if ollama_images:
+        user_message["images"] = ollama_images
 
+    flow_log(
+        "11r6",
+        "ollama",
+        "LLM call started",
+        model=model,
+        user_content=user_content,
+        system_prompt=system_prompt,
+        images=images,
+        temperature=temperature,
+    )
     response = get_ollama_client().chat(
         model=model or settings.OLLAMA_MODEL,
         messages=[
@@ -50,6 +102,19 @@ def call_ollama_structured(
         ],
         format=response_model.model_json_schema(),
         options={"temperature": temperature},
+    )
+
+    flow_log(
+        "11r6",
+        "ollama",
+        "LLM call completed",
+        model=model,
+        user_content=user_content,
+        system_prompt=system_prompt,
+        images=images,
+        temperature=temperature,
+        response_time=response.response_time,
+        response_content=response.message.content,
     )
 
     return response_model.model_validate_json(response.message.content)

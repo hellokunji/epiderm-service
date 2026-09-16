@@ -34,6 +34,13 @@ class Settings(BaseSettings):
     RAG_TOP_K: int = 3
     RAG_EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
 
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_REGION: str = "ap-southeast-2"
+    AWS_S3_BUCKET: Optional[str] = None
+    AWS_S3_PUBLIC_BASE_URL: Optional[str] = None
+    UPLOAD_MAX_BYTES: int = 10_485_760
+
     @model_validator(mode="after")
     def set_celery_defaults(self) -> "Settings":
         if self.CELERY_BROKER_URL is None:
