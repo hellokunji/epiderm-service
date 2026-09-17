@@ -1,0 +1,38 @@
+{
+  "category": "HAIR",
+  "questionnaire": {
+    "questionnaire_id": "qv_hair_v1",
+    "answers": [
+      {
+        "question_id": "main_concern",
+        "question": "What is your main hair concern?",
+        "answer": "Gradual thinning at the crown and a widening part"
+      },
+      {
+        "question_id": "duration",
+        "question": "How long have you noticed this?",
+        "answer": "About 18 months, slowly getting worse"
+      },
+      {
+        "question_id": "shedding",
+        "question": "Are you shedding more hair than usual?",
+        "answer": "Yes, more hair in the shower drain than a year ago"
+      },
+      {
+        "question_id": "scalp_symptoms",
+        "question": "Any scalp itch, pain, or flaking?",
+        "answer": "Mild itch, no open sores"
+      },
+      {
+        "question_id": "current_treatments",
+        "question": "What hair or scalp treatments are you using?",
+        "answer": "Ketoconazole shampoo twice a week. Considering topical minoxidil."
+      },
+      {
+        "question_id": "medical_history",
+        "question": "Any relevant medical history, pregnancy, or medications?",
+        "answer": "Family history of male-pattern hair loss. Not on other medications. Not pregnant."
+      }
+    ]
+  }
+}

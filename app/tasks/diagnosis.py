@@ -10,10 +10,13 @@ from app.schemas.diagnosis import (
     DiagnosisMultimodalRequest,
     DiagnosisTextRequest,
     DiagnosisVisionRequest,
+    QuestionnairePayload,
     VisualSymptomAnalysis,
 )
+from app.schemas.guardrail import GuardrailDecision
 from app.schemas.llm import SymptomAnalysis
 from app.services.diagnosis_result import save_diagnosis_result
+from app.services.guardrail import check_questionnaire_input
 from app.services.llm import call_ollama_structured, diagnose_from_questionnaire
 from app.models.consult import ConsultStatus
 from app.services.consult import update_consult_status
@@ -54,6 +57,65 @@ def _persist_success(
     update_consult_status(consult_id, ConsultStatus.DRAI_DG_DIAGNOSED)
 
 
+def _reject_guardrail(
+    *,
+    payload: dict,
+    job_id: str,
+    mode: str,
+    decision: GuardrailDecision,
+) -> dict:
+    consult_id = payload.get("consult_id")
+    result = decision.model_dump()
+    if consult_id:
+        save_diagnosis_result(
+            consult_id=consult_id,
+            response_id=payload.get("response_id"),
+            patient_id=payload.get("patient_id"),
+            job_id=job_id,
+            mode=mode,
+            status="guardrail_rejected",
+            result=result,
+            error=decision.reason,
+        )
+        flow_log(
+            "11g",
+            "diagnosis_worker",
+            "Setting consult status to GUARDRAIL_REJECTED — skipping RAG and diagnosis",
+            consult_id=consult_id,
+            job_id=job_id,
+            mode=mode,
+            reason=decision.reason,
+            risk_categories=decision.risk_categories,
+        )
+        update_consult_status(consult_id, ConsultStatus.GUARDRAIL_REJECTED)
+    return {
+        "status": "guardrail_rejected",
+        "reason": decision.reason,
+        "risk_categories": decision.risk_categories,
+    }
+
+
+def _guardrail_blocks_retrieval(
+    questionnaire: QuestionnairePayload,
+    *,
+    payload: dict,
+    job_id: str,
+    mode: str,
+) -> Optional[dict]:
+    decision = check_questionnaire_input(
+        questionnaire,
+        consult_id=payload.get("consult_id"),
+    )
+    if decision.allowed:
+        return None
+    return _reject_guardrail(
+        payload=payload,
+        job_id=job_id,
+        mode=mode,
+        decision=decision,
+    )
+
+
 def _persist_failure(*, payload: dict, job_id: str, mode: str, error: str) -> None:
     consult_id = payload.get("consult_id")
     if not consult_id:
@@ -90,6 +152,14 @@ def run_text_diagnosis(self, payload: dict) -> dict:
         retry=self.request.retries,
     )
     body = DiagnosisTextRequest.model_validate(payload)
+    rejected = _guardrail_blocks_retrieval(
+        body.questionnaire,
+        payload=payload,
+        job_id=self.request.id,
+        mode="text",
+    )
+    if rejected is not None:
+        return rejected
     retrieved_context, rag_context = try_retrieve_for_diagnosis(
         body.questionnaire,
         payload.get("category"),
@@ -269,6 +339,14 @@ def run_multimodal_diagnosis(self, payload: dict) -> dict:
         retry=self.request.retries,
     )
     body = DiagnosisMultimodalRequest.model_validate(payload)
+    rejected = _guardrail_blocks_retrieval(
+        body.questionnaire,
+        payload=payload,
+        job_id=self.request.id,
+        mode="multimodal",
+    )
+    if rejected is not None:
+        return rejected
     retrieved_context, rag_context = try_retrieve_for_diagnosis(
         body.questionnaire,
         payload.get("category"),

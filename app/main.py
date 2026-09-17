@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from app.api.v1.router import router
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.database import Base, engine, ensure_consult_status_enum
 from app.core.mongodb import close_mongo_connection, connect_to_mongo
 from app.models import Consult, QuestionnaireVersion  # noqa: F401 — register models with metadata
 from app.services.health import check_database, check_mongodb, check_redis
@@ -21,6 +21,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(bind=engine)
+    ensure_consult_status_enum()
     connect_to_mongo()
     try:
         yield

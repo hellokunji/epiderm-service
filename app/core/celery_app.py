@@ -40,10 +40,11 @@ celery_app.conf.update(
 def _init_worker_process(**_kwargs) -> None:
     # Prefork children must not reuse DB connections opened in the parent
     # (psycopg2 + fork causes SIGSEGV on macOS).
-    from app.core.database import engine
+    from app.core.database import engine, ensure_consult_status_enum
     from app.core.mongodb import connect_to_mongo
 
     engine.dispose(close=False)
+    ensure_consult_status_enum()
     connect_to_mongo()
     from app.services.rag import warmup_embedder
 

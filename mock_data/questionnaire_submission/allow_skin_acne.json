@@ -1,0 +1,38 @@
+{
+  "category": "SKIN",
+  "questionnaire": {
+    "questionnaire_id": "qv_skin_v1",
+    "answers": [
+      {
+        "question_id": "main_concern",
+        "question": "What is your main skin concern?",
+        "answer": "Painful acne on my cheeks and jawline for about 8 months"
+      },
+      {
+        "question_id": "duration",
+        "question": "How long have you had these symptoms?",
+        "answer": "8 months, worse around my period"
+      },
+      {
+        "question_id": "affected_areas",
+        "question": "Which areas are affected?",
+        "answer": ["cheeks", "jawline", "chin"]
+      },
+      {
+        "question_id": "itch_or_pain",
+        "question": "Is there itch, pain, or burning?",
+        "answer": "Tender cysts, mild burning after benzoyl peroxide"
+      },
+      {
+        "question_id": "current_products",
+        "question": "What products or treatments are you using now?",
+        "answer": "Benzoyl peroxide 2.5% and a ceramide moisturizer. Stopped a salicylic acid toner because it stung."
+      },
+      {
+        "question_id": "medical_history",
+        "question": "Any relevant medical history, pregnancy, or medications?",
+        "answer": "Not pregnant. Take a combined oral contraceptive. No known allergies."
+      }
+    ]
+  }
+}

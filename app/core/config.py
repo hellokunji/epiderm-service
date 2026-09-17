@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     RAG_TOP_K: int = 3
     RAG_EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
 
+    GUARDRAIL_ENABLED: bool = True
+
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
     AWS_REGION: str = "ap-southeast-2"

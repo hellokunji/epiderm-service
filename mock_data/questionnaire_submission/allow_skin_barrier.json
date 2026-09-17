@@ -1,0 +1,38 @@
+{
+  "category": "SKIN",
+  "questionnaire": {
+    "questionnaire_id": "qv_skin_v1",
+    "answers": [
+      {
+        "question_id": "main_concern",
+        "question": "What is your main skin concern?",
+        "answer": "Tight, flaky cheeks that sting when I apply moisturizer"
+      },
+      {
+        "question_id": "duration",
+        "question": "How long have you had these symptoms?",
+        "answer": "3 weeks after using a glycolic peel at home"
+      },
+      {
+        "question_id": "affected_areas",
+        "question": "Which areas are affected?",
+        "answer": ["cheeks", "around_nose"]
+      },
+      {
+        "question_id": "itch_or_pain",
+        "question": "Is there itch, pain, or burning?",
+        "answer": "Burning and tightness, worse after hot showers"
+      },
+      {
+        "question_id": "current_products",
+        "question": "What products or treatments are you using now?",
+        "answer": "Paused acids and retinoid. Using plain petrolatum and a fragrance-free cleanser."
+      },
+      {
+        "question_id": "medical_history",
+        "question": "Any relevant medical history, pregnancy, or medications?",
+        "answer": "History of atopic dermatitis as a child. Not pregnant."
+      }
+    ]
+  }
+}

@@ -7,7 +7,7 @@ FastAPI clinic engine for AI-assisted skin and hair consults. Patients submit qu
 Implemented:
 
 - **Questionnaires** — Active template by category (`SKIN` / `HAIR`), cached in Redis. Submit creates a consult (Postgres), stores the response (MongoDB), and enqueues async processing.
-- **Consults** — Create and list. Status advances through AI diagnosis (`CREATED` → `QUESTIONNAIRE_SUBMITTED` → `DRAI_DG_PENDING` → `DRAI_DG_PROCESSING` → `DRAI_DG_DIAGNOSED`). Later payment, doctor review, and kit statuses exist on the model but are not driven by APIs yet.
+- **Consults** — Create and list. Status advances through AI diagnosis (`CREATED` → `QUESTIONNAIRE_SUBMITTED` → `DRAI_DG_PENDING` → `DRAI_DG_PROCESSING` → `DRAI_DG_DIAGNOSED`). The diagnosis worker runs an input guardrail on questionnaire text before RAG; a fail sets `GUARDRAIL_REJECTED` and skips retrieval. Later payment, doctor review, and kit statuses exist on the model but are not driven by APIs yet.
 - **Diagnoses** — Sync LLM calls and async Celery jobs (text / vision / multimodal). Results persist in MongoDB and can be read by consult or job id.
 - **Auth** — Client routes: Bearer JWT (`sub` = patient id). Internal S2S routes: `X-API-Key`.
 
@@ -18,7 +18,7 @@ Workers:
 | Process | Queue | Role |
 | --- | --- | --- |
 | `consumer` | `questionnaire_submitted` | Load the Mongo response, set consult to `DRAI_DG_PROCESSING`, enqueue diagnosis |
-| `worker` | `diagnosis_ready` | Call Ollama and persist the diagnosis |
+| `worker` | `diagnosis_ready` | Guardrail questionnaire input, then RAG + Ollama diagnosis |
 
 ## Quick Start (App & Workers)
 
