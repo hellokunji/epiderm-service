@@ -16,7 +16,7 @@ from app.schemas.diagnosis import (
 from app.schemas.guardrail import GuardrailDecision
 from app.schemas.llm import SymptomAnalysis
 from app.services.diagnosis_result import save_diagnosis_result
-from app.services.guardrail import check_questionnaire_input
+from app.services.guardrail import check_diagnosis_output, check_questionnaire_input
 from app.services.llm import call_ollama_structured, diagnose_from_questionnaire
 from app.models.consult import ConsultStatus
 from app.services.consult import update_consult_status
@@ -63,9 +63,10 @@ def _reject_guardrail(
     job_id: str,
     mode: str,
     decision: GuardrailDecision,
+    stage: str,
 ) -> dict:
     consult_id = payload.get("consult_id")
-    result = decision.model_dump()
+    result = {**decision.model_dump(), "stage": stage}
     if consult_id:
         save_diagnosis_result(
             consult_id=consult_id,
@@ -80,16 +81,18 @@ def _reject_guardrail(
         flow_log(
             "11g",
             "diagnosis_worker",
-            "Setting consult status to GUARDRAIL_REJECTED — skipping RAG and diagnosis",
+            "Setting consult status to GUARDRAIL_REJECTED",
             consult_id=consult_id,
             job_id=job_id,
             mode=mode,
+            stage=stage,
             reason=decision.reason,
             risk_categories=decision.risk_categories,
         )
         update_consult_status(consult_id, ConsultStatus.GUARDRAIL_REJECTED)
     return {
         "status": "guardrail_rejected",
+        "stage": stage,
         "reason": decision.reason,
         "risk_categories": decision.risk_categories,
     }
@@ -113,6 +116,29 @@ def _guardrail_blocks_retrieval(
         job_id=job_id,
         mode=mode,
         decision=decision,
+        stage="questionnaire",
+    )
+
+
+def _guardrail_blocks_output(
+    result: dict,
+    *,
+    payload: dict,
+    job_id: str,
+    mode: str,
+) -> Optional[dict]:
+    decision = check_diagnosis_output(
+        result,
+        consult_id=payload.get("consult_id"),
+    )
+    if decision.allowed:
+        return None
+    return _reject_guardrail(
+        payload=payload,
+        job_id=job_id,
+        mode=mode,
+        decision=decision,
+        stage="llm_output",
     )
 
 
@@ -190,6 +216,14 @@ def run_text_diagnosis(self, payload: dict) -> dict:
             mode="text",
             task_id=self.request.id,
         )
+        blocked = _guardrail_blocks_output(
+            result_dict,
+            payload=payload,
+            job_id=self.request.id,
+            mode="text",
+        )
+        if blocked is not None:
+            return blocked
         _persist_success(
             payload=payload,
             job_id=self.request.id,
@@ -283,6 +317,14 @@ def run_vision_diagnosis(self, payload: dict) -> dict:
             mode="vision",
             task_id=self.request.id,
         )
+        blocked = _guardrail_blocks_output(
+            result_dict,
+            payload=payload,
+            job_id=self.request.id,
+            mode="vision",
+        )
+        if blocked is not None:
+            return blocked
         _persist_success(
             payload=payload,
             job_id=self.request.id,
@@ -379,6 +421,14 @@ def run_multimodal_diagnosis(self, payload: dict) -> dict:
             mode="multimodal",
             task_id=self.request.id,
         )
+        blocked = _guardrail_blocks_output(
+            result_dict,
+            payload=payload,
+            job_id=self.request.id,
+            mode="multimodal",
+        )
+        if blocked is not None:
+            return blocked
         _persist_success(
             payload=payload,
             job_id=self.request.id,

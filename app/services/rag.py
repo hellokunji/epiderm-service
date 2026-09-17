@@ -4,11 +4,13 @@ import logging
 from typing import Any, Optional
 
 from sqlalchemy import text
+from ollama import RequestError, ResponseError
 
 from app.core.config import settings
 from app.core.database import engine
 from app.core.flow_log import flow_log
 from app.schemas.diagnosis import QuestionnairePayload
+from app.services.guardrail import filter_rag_hits
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +207,7 @@ def try_retrieve_for_diagnosis(
             )
             return None, []
         hits = retrieve_guidelines(query_text, category, consult_id=consult_id)
+        hits = filter_rag_hits(hits, consult_id=consult_id)
         context = format_retrieved_context(hits)
         flow_log(
             "11r4",
@@ -218,6 +221,8 @@ def try_retrieve_for_diagnosis(
             conditions=[hit["condition_name"] for hit in hits],
         )
         return context, rag_summary(hits)
+    except (RequestError, ResponseError, ConnectionError, TimeoutError):
+        raise
     except Exception as exc:
         logger.exception("RAG retrieval failed; continuing without context")
         flow_log(
