@@ -24,7 +24,7 @@ It owns and manages:
 - `QUESTIONNAIRE_SUBMITTED` — questionnaire response saved
 - `DRAI_DG_PENDING` — queued for AI diagnosis
 - `DRAI_DG_PROCESSING` — AI diagnosis running
-- `GUARDRAIL_REJECTED` — input or diagnosis-output guardrail failed; RAG/diagnosis skipped or discarded
+- `GUARDRAIL_REJECTED` — questionnaire, image, or diagnosis-output guardrail failed
 - `DRAI_DG_DIAGNOSED` — AI diagnosis complete
 - `DRAI_DG_PAYMENT_PENDING` — waiting for diagnosis unlock payment
 - `DRAI_DG_PAYMENT_SUCCESS` — diagnosis payment succeeded

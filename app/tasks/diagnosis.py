@@ -16,7 +16,11 @@ from app.schemas.diagnosis import (
 from app.schemas.guardrail import GuardrailDecision
 from app.schemas.llm import SymptomAnalysis
 from app.services.diagnosis_result import save_diagnosis_result
-from app.services.guardrail import check_diagnosis_output, check_questionnaire_input
+from app.services.guardrail import (
+    check_clinical_images,
+    check_diagnosis_output,
+    check_questionnaire_input,
+)
 from app.services.llm import call_ollama_structured, diagnose_from_questionnaire
 from app.models.consult import ConsultStatus
 from app.services.consult import update_consult_status
@@ -117,6 +121,28 @@ def _guardrail_blocks_retrieval(
         mode=mode,
         decision=decision,
         stage="questionnaire",
+    )
+
+
+def _guardrail_blocks_images(
+    images: Optional[list[str]],
+    *,
+    payload: dict,
+    job_id: str,
+    mode: str,
+) -> Optional[dict]:
+    decision = check_clinical_images(
+        images,
+        consult_id=payload.get("consult_id"),
+    )
+    if decision.allowed:
+        return None
+    return _reject_guardrail(
+        payload=payload,
+        job_id=job_id,
+        mode=mode,
+        decision=decision,
+        stage="images",
     )
 
 
@@ -281,6 +307,14 @@ def run_vision_diagnosis(self, payload: dict) -> dict:
         retry=self.request.retries,
     )
     body = DiagnosisVisionRequest.model_validate(payload)
+    rejected = _guardrail_blocks_images(
+        body.images,
+        payload=payload,
+        job_id=self.request.id,
+        mode="vision",
+    )
+    if rejected is not None:
+        return rejected
     try:
         flow_log(
             "12",
@@ -383,6 +417,14 @@ def run_multimodal_diagnosis(self, payload: dict) -> dict:
     body = DiagnosisMultimodalRequest.model_validate(payload)
     rejected = _guardrail_blocks_retrieval(
         body.questionnaire,
+        payload=payload,
+        job_id=self.request.id,
+        mode="multimodal",
+    )
+    if rejected is not None:
+        return rejected
+    rejected = _guardrail_blocks_images(
+        body.images,
         payload=payload,
         job_id=self.request.id,
         mode="multimodal",
